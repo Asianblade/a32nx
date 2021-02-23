@@ -168,7 +168,7 @@ async fn fbw(mut gauge: msfs::Gauge) -> MSFSResult {
                     interface.update(dt, pause_detected, sim_data)?;
 
                     interface.ap_input = sim_connect::AutopilotInput::default();
-                }
+                },
                 msfs::sim_connect::SimConnectRecv::ClientData(event) => match event.id() {
                     0 => {
                         let _data = event

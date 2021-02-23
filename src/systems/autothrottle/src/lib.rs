@@ -3,7 +3,7 @@
 use ::msfs::{
     self,
     legacy::NamedVariable,
-    sim_connect::{data_definition, Period, SimConnectRecv, SIMCONNECT_OBJECT_ID_USER},
+    sim_connect::{data_definition, Period, SIMCONNECT_OBJECT_ID_USER},
 };
 
 mod athr;
@@ -60,9 +60,11 @@ fn nudge(t: &mut f64, d: f64) {
     *t = if n.signum() != t.signum() { 0.0 } else { n };
 }
 
-#[msfs::standalone_module]
-pub async fn module(mut module: msfs::StandaloneModule) -> Result<(), Box<dyn std::error::Error>> {
-    let mut sim = module.open_simconnect("ATHR")?;
+type MSFSResult = Result<(), Box<dyn std::error::Error>>;
+
+#[msfs::gauge(name=AutoThrottle)]
+async fn athr(mut gauge: msfs::Gauge) -> MSFSResult {
+    let mut sim = gauge.open_simconnect("ATHR")?;
     let mut athr = athr::AutoThrottle::new();
 
     let lever_positions = [
@@ -121,83 +123,83 @@ pub async fn module(mut module: msfs::StandaloneModule) -> Result<(), Box<dyn st
         };
     }
 
-    while let Some(recv) = module.next_event().await {
-        match recv {
-            SimConnectRecv::Event(event) => match event.id() {
-                x if x == revtog_id => {
-                    reverse_toggle = !reverse_toggle;
-                }
-                x if x == revhold_id => {
-                    reverse_hold = event.data() == 1;
-                }
-                x if x == tset_id => {
-                    let data = calc!(event.data());
-                    t1 = data;
-                    t2 = data;
-                }
-                x if x == t1set_id => {
-                    t1 = calc!(event.data());
-                }
-                x if x == t2set_id => {
-                    t2 = calc!(event.data());
-                }
-                x if x == atset_id => {
-                    let data = calc!(event.data());
-                    t1 = data;
-                    t2 = data;
-                }
-                x if x == at1set_id => {
-                    t1 = calc!(event.data());
-                }
-                x if x == at2set_id => {
-                    t2 = calc!(event.data());
-                }
-                x if x == exset_id => {
-                    let data = calc!(event.data());
-                    t1 = data;
-                    t2 = data;
-                }
-                x if x == ex1set_id => {
-                    t1 = calc!(event.data());
-                }
-                x if x == ex2set_id => {
-                    t2 = calc!(event.data());
-                }
-                x if x == thrinc_id => {
-                    nudge(&mut t1, INC_DELTA);
-                    nudge(&mut t2, INC_DELTA);
-                }
-                x if x == thrdec_id => {
-                    nudge(&mut t1, -INC_DELTA);
-                    nudge(&mut t2, -INC_DELTA);
-                }
-                x if x == thrincs_id => {
-                    nudge(&mut t1, INC_DELTA_SMALL);
-                    nudge(&mut t2, INC_DELTA_SMALL);
-                }
-                x if x == thrdecs_id => {
-                    nudge(&mut t1, -INC_DELTA_SMALL);
-                    nudge(&mut t2, -INC_DELTA_SMALL);
-                }
-                x if x == thr1inc_id => nudge(&mut t1, INC_DELTA),
-                x if x == thr1dec_id => nudge(&mut t1, -INC_DELTA),
-                x if x == thr1incs_id => nudge(&mut t1, INC_DELTA_SMALL),
-                x if x == thr1decs_id => nudge(&mut t1, -INC_DELTA_SMALL),
-                x if x == thr2inc_id => nudge(&mut t2, INC_DELTA),
-                x if x == thr2dec_id => nudge(&mut t2, -INC_DELTA),
-                x if x == thr2incs_id => nudge(&mut t2, INC_DELTA_SMALL),
-                x if x == thr2decs_id => nudge(&mut t2, -INC_DELTA_SMALL),
-                x if x == athrpb_id => {
-                    athr.input().pushbutton = true;
-                }
-                x if x == inst_id => {
-                    athr.input().instinctive_disconnect = event.data() == 1;
-                }
-                _ => unreachable!(),
-            },
-            SimConnectRecv::SimObjectData(data) => match data.id() {
-                0 => {
-                    let data = data.into::<Flight>(&sim).unwrap();
+    while let Some(event) = gauge.next_event().await {
+        if let msfs::MSFSEvent::SimConnect(event) = event {
+            match event {
+                msfs::sim_connect::SimConnectRecv::Event(event) => match event.id() {
+                    e if e == revtog_id => {
+                        reverse_toggle = !reverse_toggle;
+                    }
+                    e if e == revhold_id => {
+                        reverse_hold = event.data() == 1;
+                    }
+                    e if e == tset_id => {
+                        let data = calc!(event.data());
+                        t1 = data;
+                        t2 = data;
+                    }
+                    e if e == t1set_id => {
+                        t1 = calc!(event.data());
+                    }
+                    e if e == t2set_id => {
+                        t2 = calc!(event.data());
+                    }
+                    e if e == atset_id => {
+                        let data = calc!(event.data());
+                        t1 = data;
+                        t2 = data;
+                    }
+                    e if e == at1set_id => {
+                        t1 = calc!(event.data());
+                    }
+                    e if e == at2set_id => {
+                        t2 = calc!(event.data());
+                    }
+                    e if e == exset_id => {
+                        let data = calc!(event.data());
+                        t1 = data;
+                        t2 = data;
+                    }
+                    e if e == ex1set_id => {
+                        t1 = calc!(event.data());
+                    }
+                    e if e == ex2set_id => {
+                        t2 = calc!(event.data());
+                    }
+                    e if e == thrinc_id => {
+                        nudge(&mut t1, INC_DELTA);
+                        nudge(&mut t2, INC_DELTA);
+                    }
+                    e if e == thrdec_id => {
+                        nudge(&mut t1, -INC_DELTA);
+                        nudge(&mut t2, -INC_DELTA);
+                    }
+                    e if e == thrincs_id => {
+                        nudge(&mut t1, INC_DELTA_SMALL);
+                        nudge(&mut t2, INC_DELTA_SMALL);
+                    }
+                    e if e == thrdecs_id => {
+                        nudge(&mut t1, -INC_DELTA_SMALL);
+                        nudge(&mut t2, -INC_DELTA_SMALL);
+                    }
+                    e if e == thr1inc_id => nudge(&mut t1, INC_DELTA),
+                    e if e == thr1dec_id => nudge(&mut t1, -INC_DELTA),
+                    e if e == thr1incs_id => nudge(&mut t1, INC_DELTA_SMALL),
+                    e if e == thr1decs_id => nudge(&mut t1, -INC_DELTA_SMALL),
+                    e if e == thr2inc_id => nudge(&mut t2, INC_DELTA),
+                    e if e == thr2dec_id => nudge(&mut t2, -INC_DELTA),
+                    e if e == thr2incs_id => nudge(&mut t2, INC_DELTA_SMALL),
+                    e if e == thr2decs_id => nudge(&mut t2, -INC_DELTA_SMALL),
+                    e if e == athrpb_id => {
+                        athr.input().pushbutton = true;
+                    }
+                    e if e == inst_id => {
+                        athr.input().instinctive_disconnect = event.data() == 1;
+                    }
+                    _ => unreachable!(),
+                },
+                msfs::sim_connect::SimConnectRecv::SimObjectData(event) => {
+                    let data = event.into::<Flight>(&sim).unwrap();
                     let input = athr.input();
                     input.airspeed = data.airspeed;
                     input.airspeed_target = data.airspeed_hold;
@@ -213,10 +215,9 @@ pub async fn module(mut module: msfs::StandaloneModule) -> Result<(), Box<dyn st
                     } else {
                         input.mode = athr::Mode::Speed;
                     }
-                }
-                _ => unreachable!(),
-            },
-            _ => {}
+                },
+                _ => {}
+            }
         }
 
         let map = |t| {
